@@ -36,7 +36,7 @@ Badge](https://img.shields.io/twitter/follow/Elliot_Gould_?style=flat-square&log
 # Getting Started
 
 These are some good starting references and further information to help
-setup your environment:
+set up your environment:
 
 -   [Install the Github CLI](https://cli.github.com/)
 -   [How to use Git with R and
@@ -88,7 +88,7 @@ data.
 ## Sources of Truth
 
 A source of truth is essentially a technical asset, such as a csv file,
-is stored in one permanant location as the most updated technical
+is stored in one permanant location, as the most updated technical
 resource for collaborators to reference. The `/data` folder in the
 workspace is the most common place to find such files however, when a
 project grows it can be cumbersome to track the right data file across
@@ -171,7 +171,7 @@ saved:
 Once you have a custom pins board setup its then pretty straight forward
 to "pin" this resource to the board (Note that team members will need
 access to the repository on github). For example, ill create a basic
-table and save this to my datasets board:
+table and save this to my `datasets` board:
 
 ```{r, echo=TRUE}
 
@@ -222,12 +222,6 @@ housing_obj %>%
 
 To sum up, `Pins` is a great resource to manage data resources. By
 setting up your own board for your team you ensure that everyone is
-sourcing the same file in any coding and analysis. It should be noted
-that, although a /data folder is sufficient, its good to think about
-what happens to data once you start collaborating and how to manage any
-changes to a data table. Especially if you are working across multiple
-packages and repositories, there is nothing more time consuming shifting
-through a git history to work out which csv file the team should be
-using.
+sourcing the same file in any coding and analysis.
 
 ## 
