@@ -63,7 +63,7 @@ conference](https://github.com/psychtek/sortee2021). The following is
 some of the tools and tips we use as a team to share our code and data
 with the `#resops` practices in mind.
 
-# The Workspace 
+# The Workspace
 
 Everything that you need to share, edit and collaborate with your data
 and code is already available within Rstudio. For example:

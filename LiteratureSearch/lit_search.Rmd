@@ -1,0 +1,115 @@
+---
+title: "lit search"
+author: "Aaron Willcox"
+date: "18/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Literature Search with [Litsearchr](https://elizagrames.github.io/litsearchr/#tutorials)
+
+```{r cars}
+
+
+naiveimport <-
+  litsearchr::import_results(directory = "data", file = "data/score.bib", verbose = TRUE)
+
+naiveresults <-
+  litsearchr::remove_duplicates(naiveimport, field = "title", method = "string_osa")
+
+rakedkeywords <-
+  litsearchr::extract_terms(
+    text = paste(naiveresults$title, naiveresults$abstract),
+    method = "fakerake",
+    min_freq = 2,
+    ngrams = TRUE,
+    min_n = 2,
+    language = "English"
+  )
+#> Loading required namespace: stopwords
+
+taggedkeywords <-
+  litsearchr::extract_terms(
+    keywords = naiveresults$keywords,
+    method = "tagged",
+    min_freq = 2,
+    ngrams = TRUE,
+    min_n = 2,
+    language = "English"
+  )
+
+
+all_keywords <- unique(append(taggedkeywords, rakedkeywords))
+
+naivedfm <-
+  litsearchr::create_dfm(
+    elements = paste(naiveresults$title, naiveresults$abstract),
+    features = all_keywords
+  )
+
+naivegraph <-
+  litsearchr::create_network(
+    search_dfm = naivedfm,
+    min_studies = 2,
+    min_occ = 2
+  )
+
+
+cutoff <-
+  litsearchr::find_cutoff(
+    naivegraph,
+    method = "cumulative",
+    percent = .80,
+    imp_method = "strength"
+  )
+
+reducedgraph <-
+  litsearchr::reduce_graph(naivegraph, cutoff_strength = cutoff[1])
+
+searchterms <- litsearchr::get_keywords(reducedgraph)
+
+write.csv(searchterms, "data/search_terms.csv")
+# manually group terms in the csv
+grouped_terms <- read.csv("./search_terms_grouped.csv")
+# extract the woodpecker terms from the csv
+# woodpecker_terms <- grouped_terms$term[grep("woodpecker", grouped_terms$group)]
+# join together a list of manually generated woodpecker terms with the ones from the csv
+# woodpeckers <- unique(append(c("woodpecker")), woodpecker_terms)
+# repeat this for all concept groups
+# then merge them into a list, using the code below as an example
+# mysearchterms <- list(woodpeckers, fire)
+
+mysearchterms <-
+  list(
+    c(
+      "computational reproducibility",
+      "reproducible research",
+      "analysis pipelines",
+      "computational research",
+      "computational analyses"),
+    c(
+      "devops practices",
+      "software engineering",
+      "agile development",
+      "continuous deployment",
+      "continuous delivery",
+      "adopting devops"
+    )
+  )
+
+my_search <-
+  litsearchr::write_search(
+    groupdata = mysearchterms,
+    languages = "English",
+    stemming = TRUE,
+    closure = "none",
+    exactphrase = TRUE,
+    writesearch = FALSE,
+    verbose = TRUE
+  )
+```
+
+## 
