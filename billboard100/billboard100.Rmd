@@ -12,6 +12,8 @@ editor_options:
 ```{r setup, include=FALSE}
 library(knitr)
 library(rmdformats)
+library(lubridate)
+library(tidyverse)
 
 ## Global options
 options(max.print="75")
@@ -37,9 +39,162 @@ opts_knit$set(width=75)
 tuesdata <- tidytuesdayR::tt_load('2021-09-14')
 tuesdata <- tidytuesdayR::tt_load(2021, week = 38)
 
+tidytuesdayR::readme(tuesdata)
+
 billboard <- tuesdata$billboard
 audio_features <- tuesdata$audio_features
 
 
 ```
 
+Some basic table cleaning: 
+
+Change the date format
+Create a column with the year 
+change week position into an order factor
+Create keys
+
+```{r}
+
+billboard_with_features <- billboard %>%   
+  left_join(audio_features, by = c("song", "performer", "song_id"))
+
+billboard_with_features <- billboard_with_features %>% 
+  mutate(date = mdy(week_id), 
+         Year = year(date),
+         week_position = factor(week_position, ordered = TRUE),
+         mode = if_else(mode == 0, "minor", "Major"),
+         key = factor(key, levels = c(0:11),
+                      labels = c("C", "C♯/D♭", "D", "D♯/E♭", "E", "F",
+                                 "F♯/G♭", "G", "G♯/A♭", "A", "A♯/B♭", "B")),
+         spotify_genre = str_remove_all(spotify_genre, "(\\[)|(\\])|(')|(\")")) %>% 
+  filter(!is.na(spotify_genre) & spotify_genre != "")
+
+
+
+```
+
+
+What were the most popular genres over the years? 
+
+genres seem to have their top level genre as the first entry followed by associated similar names 
+for the genre group. Will use the top level genre as the main category 
+
+```{r}
+billboard_with_features %>% 
+  group_by(spotify_genre) %>% 
+  count(sort = TRUE) %>% 
+  print(n = 80)
+  
+  
+
+
+```
+
+# IDEAS
+
+## Metal and Rock Categories 
+
+## Longest Time spend on Chart
+
+## Greatest or Quickest shift in chart position 
+
+## Number of Instances a song has appeared
+
+## Audio Features
+
+
+
+for each year predict:
+peak_position = energy, key, loudness, mode, speech + error
+
+Bit of a mess so need to clean up some of the text
+
+
+```{r}
+
+```
+
+
+## Which audio features best predict the most popular songs? 
+
+Check for multicolinearity 
+
+```{r}
+
+# clear out NAs and reduce duplicate songs
+multi_check <- billboard_with_features %>% 
+  filter(across(c("energy", 
+                  "loudness", 
+                  "speechiness", 
+                  "instrumentalness", 
+                  "liveness", 
+                  "valence", 
+                  "acousticness", 
+                  "mode", 
+                  "tempo"), ~ !is.na(.))) %>% 
+  select(song, danceability:tempo) %>% 
+  relocate(mode, .after = song) %>% 
+    relocate(key, .after = song) %>% 
+  distinct()
+
+X <- multi_check[,6:12]
+library(GGally)
+ggpairs(X)
+```
+
+
+```{r}
+model_vars <- billboard_with_features %>% 
+  filter(Year == 2000) %>% 
+  filter(across(c("energy", 
+                  "loudness", 
+                  "speechiness", 
+                  "instrumentalness", 
+                  "liveness", 
+                  "valence", 
+                  "acousticness", 
+                  "mode",
+                  "tempo"), ~ !is.na(.)))
+
+
+model_df <- lm(peak_position ~ 
+                 energy + 
+                 loudness + 
+                 speechiness + 
+                 instrumentalness + 
+                 liveness + 
+                 valence +
+                 acousticness +
+                 tempo +
+                 factor(mode) +
+                 factor(song), 
+               data = model_vars)
+summary(model_df)
+aov(model_df)
+
+coef <- tidy(model_df, conf.int = TRUE, conf.level = 0.95) %>% 
+  filter(term %in% c(#"(Intercept)", 
+                     "energy", 
+                     "loudness", 
+                     "speechiness", 
+                     #"instrumentalness", 
+                     "liveness", 
+                     "valence", 
+                     "acousticness", 
+                     "tempo",
+                     "factor(mode)minor",
+                     "factor(song)"))
+  
+
+ggplot(coef, aes(term, estimate))+
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high))+
+  geom_point()+
+  coord_flip()+
+  labs(title = "Coefficients of a linear regression model")
+
+```
+
+> `liveness`: Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+
+> `speechiness`: Values above 0.66 describe tracks that are probably made entirely of spoken words. Values between 0.33 and 0.66 describe tracks that may contain both music and speech, either in sections or layered, including such cases as rap music. Values below 0.33 most likely represent music and other non-speech-like tracks.
